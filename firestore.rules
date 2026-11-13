@@ -1,0 +1,306 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUsername(u) {
+      return u is string && u.size() >= 3 && u.size() <= 16 && u.matches('^[a-zA-Z][a-zA-Z0-9_]{2,15}$');
+    }
+
+    function isValidUsernameLower(u) {
+      return u is string && u.size() >= 3 && u.size() <= 16 && u.matches('^[a-z][a-z0-9_]{2,15}$');
+    }
+
+    function isValidAvatar(av) {
+      return av is string && av.size() >= 1 && av.size() <= 16;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidUsernameRecord(data) {
+      return data.keys().hasAll(['uid', 'username', 'usernameLower', 'avatar', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'username', 'usernameLower', 'avatar', 'createdAt'])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && isValidUsername(data.username)
+        && isValidUsernameLower(data.usernameLower)
+        && data.username.lower() == data.usernameLower
+        && isValidAvatar(data.avatar)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUserProfile(data, uid) {
+      return data.keys().hasAll(['uid', 'username', 'usernameLower', 'avatar', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'username', 'usernameLower', 'avatar', 'createdAt'])
+        && isValidId(data.uid)
+        && data.uid == uid
+        && data.uid == request.auth.uid
+        && isValidUsername(data.username)
+        && isValidUsernameLower(data.usernameLower)
+        && data.username.lower() == data.usernameLower
+        && isValidAvatar(data.avatar)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUserScoreRecord(data, boardId) {
+      return data.keys().hasAll(['boardId', 'best', 'bestDate', 'plays', 'totalTimeMs', 'lastPlayedAt', 'last10', 'updatedAt'])
+        && data.keys().hasOnly(['boardId', 'best', 'bestDate', 'plays', 'totalTimeMs', 'lastPlayedAt', 'last10', 'updatedAt'])
+        && isValidId(data.boardId)
+        && data.boardId == boardId
+        && data.best is number
+        && data.best >= 0
+        && data.best <= 1000000000000
+        && data.bestDate is number
+        && data.plays is number
+        && data.plays >= 1
+        && data.totalTimeMs is number
+        && data.totalTimeMs >= 0
+        && data.lastPlayedAt is number
+        && data.last10 is list
+        && data.last10.size() >= 1
+        && data.last10.size() <= 10
+        && data.last10[0] is map
+        && data.last10[0].keys().hasAll(['score', 'at'])
+        && data.last10[0].keys().hasOnly(['score', 'at'])
+        && data.last10[0].score is number
+        && data.last10[0].at is number
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidLeaderboardEntry(data, uid) {
+      return data.keys().hasAll(['uid', 'username', 'avatar', 'score', 'durationMs', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'username', 'avatar', 'score', 'durationMs', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == uid
+        && data.uid == request.auth.uid
+        && isValidUsername(data.username)
+        && isValidAvatar(data.avatar)
+        && data.score is number
+        && data.score >= 0
+        && data.score <= 1000000000000
+        && data.durationMs is number
+        && data.durationMs >= 0
+        && data.durationMs <= 86400000
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInboxItem(data) {
+      return data.keys().hasAll(['type', 'senderUid', 'senderUsername', 'senderAvatar', 'recipientUsername', 'gameId', 'score', 'note', 'read', 'createdAt', 'expiresAt'])
+        && data.keys().hasOnly(['type', 'senderUid', 'senderUsername', 'senderAvatar', 'recipientUsername', 'gameId', 'score', 'note', 'read', 'createdAt', 'expiresAt'])
+        && data.type in ['score', 'challenge', 'result']
+        && isValidId(data.senderUid)
+        && isValidUsername(data.senderUsername)
+        && isValidAvatar(data.senderAvatar)
+        && isValidUsername(data.recipientUsername)
+        && isValidId(data.gameId)
+        && data.gameId.size() <= 64
+        && data.score is number
+        && data.score >= 0
+        && data.score <= 1000000000000
+        && data.note is string
+        && data.note.size() <= 120
+        && data.read is bool
+        && data.createdAt is timestamp
+        && data.expiresAt is number;
+    }
+
+    function isValidBlockRecord(data) {
+      return data.keys().hasAll(['blockedAt'])
+        && data.keys().hasOnly(['blockedAt'])
+        && data.blockedAt is timestamp;
+    }
+
+    function isValidReportRecord(data) {
+      return data.keys().hasAll(['reporterUid', 'targetUid', 'reason', 'createdAt'])
+        && data.keys().hasOnly(['reporterUid', 'targetUid', 'reason', 'createdAt'])
+        && isValidId(data.reporterUid)
+        && data.reporterUid == request.auth.uid
+        && isValidId(data.targetUid)
+        && data.reason is string
+        && data.reason.size() >= 1
+        && data.reason.size() <= 300
+        && data.createdAt is timestamp;
+    }
+
+    // Connection check doc
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // usernames/{name}: Public player lookup registry (no PII)
+    match /usernames/{name} {
+      allow get: if isSignedIn() && isValidId(name);
+      allow list: if isSignedIn() && request.query.limit <= 8 && resource.data.usernameLower >= '';
+      allow create: if isVerifiedUser()
+        && isValidUsernameLower(name)
+        && isValidUsernameRecord(incoming())
+        && incoming().usernameLower == name
+        && incoming().createdAt == request.time
+        && !exists(/databases/$(database)/documents/usernames/$(name));
+      allow update: if isVerifiedUser()
+        && isValidUsernameLower(name)
+        && isValidUsernameRecord(incoming())
+        && isOwner(existing().uid)
+        && incoming().uid == existing().uid
+        && incoming().username == existing().username
+        && incoming().usernameLower == existing().usernameLower
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['avatar']);
+      allow delete: if isSignedIn() && isValidId(name) && isOwner(existing().uid);
+    }
+
+    // users/{uid}: Permanent player profile (no PII)
+    match /users/{uid} {
+      allow get: if isSignedIn() && isValidId(uid);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(uid)
+        && isOwner(uid)
+        && isValidUserProfile(incoming(), uid)
+        && incoming().createdAt == request.time
+        && getAfter(/databases/$(database)/documents/usernames/$(incoming().usernameLower)).data.uid == uid;
+      allow update: if isVerifiedUser()
+        && isValidId(uid)
+        && isOwner(uid)
+        && isValidUserProfile(incoming(), uid)
+        && incoming().uid == existing().uid
+        && incoming().username == existing().username
+        && incoming().usernameLower == existing().usernameLower
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['avatar']);
+      allow delete: if isSignedIn() && isValidId(uid) && isOwner(uid);
+
+      // users/{uid}/scores/{boardId}: Permanent per-user score history
+      match /scores/{boardId} {
+        allow get, list: if isSignedIn() && isOwner(uid);
+        allow create: if isVerifiedUser()
+          && isValidId(uid)
+          && isValidId(boardId)
+          && isOwner(uid)
+          && isValidUserScoreRecord(incoming(), boardId)
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/users/$(uid));
+        allow update: if isVerifiedUser()
+          && isValidId(uid)
+          && isValidId(boardId)
+          && isOwner(uid)
+          && isValidUserScoreRecord(incoming(), boardId)
+          && incoming().boardId == existing().boardId
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['best', 'bestDate', 'plays', 'totalTimeMs', 'lastPlayedAt', 'last10', 'updatedAt']);
+        allow delete: if isSignedIn() && isValidId(uid) && isValidId(boardId) && isOwner(uid);
+      }
+    }
+
+    // All-time leaderboards
+    match /leaderboards/{boardId}/entries/{uid} {
+      allow get: if isSignedIn() && isValidId(boardId) && isValidId(uid);
+      allow list: if isSignedIn() && resource.data.score >= 0;
+      allow create, update: if isVerifiedUser()
+        && isValidId(boardId)
+        && isValidId(uid)
+        && isOwner(uid)
+        && isValidLeaderboardEntry(incoming(), uid)
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.username == incoming().username;
+      allow delete: if isSignedIn() && isValidId(boardId) && isValidId(uid) && isOwner(uid);
+    }
+
+    // Weekly leaderboards
+    match /weekly/{weeklyKey}/entries/{uid} {
+      allow get: if isSignedIn() && isValidId(weeklyKey) && isValidId(uid);
+      allow list: if isSignedIn() && resource.data.score >= 0;
+      allow create, update: if isVerifiedUser()
+        && isValidId(weeklyKey)
+        && isValidId(uid)
+        && isOwner(uid)
+        && isValidLeaderboardEntry(incoming(), uid)
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.username == incoming().username;
+      allow delete: if isSignedIn() && isValidId(weeklyKey) && isValidId(uid) && isOwner(uid);
+    }
+
+    // Inbox: Shared scores & challenges sent via username
+    match /inbox/{recipientUid}/items/{itemId} {
+      allow get, list: if isSignedIn() && isOwner(recipientUid);
+      allow create: if isVerifiedUser()
+        && isValidId(recipientUid)
+        && isValidId(itemId)
+        && isValidInboxItem(incoming())
+        && incoming().senderUid == request.auth.uid
+        && incoming().read == false
+        && incoming().createdAt == request.time
+        && recipientUid != request.auth.uid
+        && exists(/databases/$(database)/documents/users/$(recipientUid))
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == incoming().senderUsername
+        && !exists(/databases/$(database)/documents/blocks/$(recipientUid)/users/$(request.auth.uid));
+      allow update: if isVerifiedUser()
+        && isValidId(recipientUid)
+        && isValidId(itemId)
+        && isOwner(recipientUid)
+        && isValidInboxItem(incoming())
+        && incoming().type == existing().type
+        && incoming().senderUid == existing().senderUid
+        && incoming().senderUsername == existing().senderUsername
+        && incoming().senderAvatar == existing().senderAvatar
+        && incoming().recipientUsername == existing().recipientUsername
+        && incoming().gameId == existing().gameId
+        && incoming().score == existing().score
+        && incoming().note == existing().note
+        && incoming().createdAt == existing().createdAt
+        && incoming().expiresAt == existing().expiresAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if isSignedIn() && isValidId(recipientUid) && isValidId(itemId) && isOwner(recipientUid);
+    }
+
+    // Blocks
+    match /blocks/{uid}/users/{targetUid} {
+      allow get, list: if isSignedIn() && isOwner(uid);
+      allow create, update: if isVerifiedUser()
+        && isValidId(uid)
+        && isValidId(targetUid)
+        && isOwner(uid)
+        && isValidBlockRecord(incoming())
+        && incoming().blockedAt == request.time;
+      allow delete: if isSignedIn() && isValidId(uid) && isValidId(targetUid) && isOwner(uid);
+    }
+
+    // Reports
+    match /reports/{reportId} {
+      allow read: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(reportId)
+        && isValidReportRecord(incoming())
+        && incoming().createdAt == request.time;
+    }
+  }
+}

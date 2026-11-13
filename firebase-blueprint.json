@@ -1,0 +1,272 @@
+{
+  "entities": {
+    "UsernameRecord": {
+      "title": "UsernameRecord",
+      "description": "Maps a unique lowercase username to a permanent user UID and public avatar.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]{2,15}$"
+        },
+        "usernameLower": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16,
+          "pattern": "^[a-z][a-z0-9_]{2,15}$"
+        },
+        "avatar": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "username", "usernameLower", "avatar", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public player profile tied permanently to Firebase Auth UID (no PII stored).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]{2,15}$"
+        },
+        "usernameLower": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16,
+          "pattern": "^[a-z][a-z0-9_]{2,15}$"
+        },
+        "avatar": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "username", "usernameLower", "avatar", "createdAt"]
+    },
+    "UserScoreRecord": {
+      "title": "UserScoreRecord",
+      "description": "Permanent per-board personal best and play history for a signed-in user.",
+      "type": "object",
+      "properties": {
+        "boardId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "best": {
+          "type": "number"
+        },
+        "bestDate": {
+          "type": "number"
+        },
+        "plays": {
+          "type": "number"
+        },
+        "totalTimeMs": {
+          "type": "number"
+        },
+        "lastPlayedAt": {
+          "type": "number"
+        },
+        "last10": {
+          "type": "array"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["boardId", "best", "bestDate", "plays", "totalTimeMs", "lastPlayedAt", "last10", "updatedAt"]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Ranked leaderboard score entry tied to a permanent user UID and username.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]{2,15}$"
+        },
+        "avatar": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "score": {
+          "type": "number"
+        },
+        "durationMs": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "username", "avatar", "score", "durationMs", "updatedAt"]
+    },
+    "InboxItem": {
+      "title": "InboxItem",
+      "description": "Score or challenge shared directly to a player via username.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["score", "challenge", "result"]
+        },
+        "senderUid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderUsername": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]{2,15}$"
+        },
+        "senderAvatar": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "recipientUsername": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 16,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]{2,15}$"
+        },
+        "gameId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "score": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "senderUid", "senderUsername", "senderAvatar", "recipientUsername", "gameId", "score", "note", "read", "createdAt", "expiresAt"]
+    },
+    "BlockRecord": {
+      "title": "BlockRecord",
+      "description": "Tracks users blocked from sending score challenges to this recipient.",
+      "type": "object",
+      "properties": {
+        "blockedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["blockedAt"]
+    },
+    "ReportRecord": {
+      "title": "ReportRecord",
+      "description": "Abuse report submitted by a signed-in user.",
+      "type": "object",
+      "properties": {
+        "reporterUid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetUid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["reporterUid", "targetUid", "reason", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/usernames/{name}": {
+      "schema": { "$ref": "#/entities/UsernameRecord" },
+      "description": "Unique username registry for player lookup and score sharing."
+    },
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public player profile keyed by permanent Firebase Auth UID."
+    },
+    "/users/{uid}/scores/{boardId}": {
+      "schema": { "$ref": "#/entities/UserScoreRecord" },
+      "description": "Per-user permanent personal score history and statistics."
+    },
+    "/leaderboards/{boardId}/entries/{uid}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "All-time leaderboard entries per game board."
+    },
+    "/weekly/{weeklyKey}/entries/{uid}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "Weekly leaderboard entries per game board and ISO week."
+    },
+    "/inbox/{recipientUid}/items/{itemId}": {
+      "schema": { "$ref": "#/entities/InboxItem" },
+      "description": "Direct score challenges shared to a player by username."
+    },
+    "/blocks/{uid}/users/{targetUid}": {
+      "schema": { "$ref": "#/entities/BlockRecord" },
+      "description": "User block list for inbox protection."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/ReportRecord" },
+      "description": "Abuse reports."
+    }
+  }
+}
